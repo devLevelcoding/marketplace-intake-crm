@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Supply side of the marketplace — whoever owns the space/equipment being listed.
+model Owner {
+  id        Int       @id @default(autoincrement())
+  name      String
+  company   String?
+  phone     String?
+  email     String?
+  notes     String?
+  status    String    @default("active")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  listings Listing[]
+
+  @@map("owners")
+}
+
+// The asset itself — event space, equipment, whatever the marketplace deals in.
+model Listing {
+  id          Int       @id @default(autoincrement())
+  ownerId     Int
+  title       String
+  category    String    @default("event-space")
+  description String?
+  location    String?
+  capacity    Decimal?
+  dailyRate   Decimal?
+  currency    String    @default("EUR")
+  status      String    @default("available")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner           Owner            @relation(fields: [ownerId], references: [id])
+  bookingRequests BookingRequest[]
+
+  @@map("listings")
+}
+
+// Demand side of the marketplace — whoever wants to rent a listing.
+model Requester {
+  id        Int       @id @default(autoincrement())
+  fname     String
+  lname     String
+  company   String?
+  phone     String?
+  email     String?
+  notes     String?
+  status    String    @default("active")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  bookingRequests BookingRequest[]
+
+  @@map("requesters")
+}
+
+// The deal itself — connects a Requester to a Listing. Equivalent of
+// crm3-micro's Proposal, but explicitly two-sided instead of implicitly so.
+model BookingRequest {
+  id          Int       @id @default(autoincrement())
+  requesterId Int
+  listingId   Int
+  startDate   DateTime
+  endDate     DateTime?
+  amount      Decimal?
+  currency    String    @default("EUR")
+  status      String    @default("pending")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  requester Requester @relation(fields: [requesterId], references: [id])
+  listing   Listing   @relation(fields: [listingId], references: [id])
+
+  @@map("booking_requests")
+}
